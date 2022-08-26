@@ -1,7 +1,6 @@
-![Logo]()
 <p align="center">
-  <img width="200" height="200" src="https://github.com/rafaelferreira2312/teste-empresa-stays/blob/main/img/stays.jpeg">
-  <img width="200" height="200" src="https://github.com/rafaelferreira2312/teste-empresa-stays/blob/main/img/node.jpg">
+  <a href="https://stays.net/"><img width="200" height="200" src="https://github.com/rafaelferreira2312/teste-empresa-stays/blob/main/img/stays.jpeg"></a>
+  <a href="https://nodejs.org/pt-br/"><img width="200" height="350" src="https://github.com/rafaelferreira2312/teste-empresa-stays/blob/main/img/node.jpg"></a>
 </p>
 
 # Título do Projeto

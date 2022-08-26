@@ -1,3 +1,11 @@
-![Logo](https://github.com/rafaelferreira2312/teste-empresa-stays/blob/main/img/stays.jpeg)
+![Logo]()
+<p align="center">
+  <img width="200" height="200" src="https://github.com/rafaelferreira2312/teste-empresa-stays/blob/main/img/stays.jpeg">
+  <img width="200" height="200" src="https://github.com/rafaelferreira2312/teste-empresa-stays/blob/main/img/node.jpg">
+</p>
 
-#Teste de conhecimento em node.js
+# Título do Projeto
+
+Teste de conhecimento em node.js e javascript realizado pela empresa Stays.
+
+

@@ -1,0 +1,57 @@
+<div id="index">
+<div class="row-fluid">
+<div class="span6">
+<h2>{{#i18n}}Assets{{/i18n}}: <span>{{i18n_cost cmdty cmdty assetsSum}}</span></h2>
+<hr size="2" noshade />
+<div class="well">
+<ul class="nav nav-list">
+	{{#each assets}}
+		{{> index_account}}
+	{{/each}}
+</ul>
+</div>
+</div>
+<div class="span6">
+<h2>{{#i18n}}Liabilities{{/i18n}}: <span>{{i18n_cost cmdty cmdty liabilitiesSum}}</span></h2>
+<hr size="2" noshade />
+<div class="well">
+	<ul class="nav nav-list">
+	{{#liabilities}}
+		{{> index_account}}
+	{{/liabilities}}
+	</ul>
+</div>
+</div>
+</div>
+</div>
+<script>
+require(["jquery","jquery-block"], function ($) {
+	$(function() {
+		var $page = $("#index");
+		$page.addClass("ready");
+		$("#page_menu #settings").on("click", function(evt){
+			evt.preventDefault();
+			$this = $(this);
+			var $me = $page;
+			$me.block();
+			(function (cb) {
+				require(['cash/pagesettings'], function (Modal) {
+					var modal = new Modal();
+					modal.show();
+					modal.once('shown', function () { $me.unblock(); })
+					modal.once('result', function (type, acc) {
+						if (type!='saved')
+							location.reload();
+						modal.hide()
+						cb();
+					})
+				},cb)
+			})(function (err) {
+				if (err) appError(err);
+				$me.unblock();
+			})
+			return false;
+		});
+	});
+}, appError)
+</script>

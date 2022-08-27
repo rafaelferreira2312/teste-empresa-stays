@@ -1,0 +1,320 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2013-04-16 00:18+0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../modules/cash/lib/accapi.js:87
+msgid "Disballance"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:310 ../modules/cash/lib/accapi.js:384
+msgid "Cash"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:310
+msgid "My wallet"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:311 ../modules/cash/lib/accapi.js:383
+msgid "Bank"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:311
+msgid "My account"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:312
+msgid "Credit Cards"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:312
+msgid "My card"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:313 ../modules/cash/lib/accapi.js:391
+msgid "Income"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:313
+msgid "Salary"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:313
+msgid "Interest"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:313
+msgid "Assets sale"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:313 ../modules/cash/lib/accapi.js:314
+#: ../modules/cash/lib/accapi.js:315 ../modules/cash/lib/accapi.js:316
+#: ../modules/cash/lib/accapi.js:317 ../modules/cash/lib/accapi.js:318
+#: ../modules/cash/lib/accapi.js:319 ../modules/cash/lib/accapi.js:320
+msgid "Other"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:314
+msgid "Car"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:314
+msgid "Fuel"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:314 ../modules/cash/lib/accapi.js:318
+msgid "Insurance"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:314
+msgid "Service"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:314
+msgid "Repair"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:315
+msgid "Life"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:315
+msgid "Food"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:315
+msgid "Drugs"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:315 ../modules/cash/lib/accapi.js:318
+msgid "Transport"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:316
+msgid "Utilities"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:316
+msgid "Mobile links"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:316
+msgid "Fixed links"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:316
+msgid "House"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:316
+msgid "Education"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:317
+msgid "Hobby"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:317
+msgid "Sport"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:317
+msgid "Garden"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:317
+msgid "Charuty"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:318
+msgid "Real assets"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:318
+msgid "Furniture"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:318
+msgid "Estate"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:318
+msgid "Goods"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:319
+msgid "Recreation"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:319
+msgid "Travel"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:319
+msgid "Pleasures"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:319
+msgid "Food & drinks"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:319
+msgid "Events"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:320
+msgid "Accidental"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:320
+msgid "Stolen"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:320
+msgid "Gifts"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:320
+msgid "Bad debts"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:321
+msgid "Debts"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:321
+msgid "Friends"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:383
+msgid "Deposited"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:383
+msgid "Withdrawal"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:384 ../modules/cash/lib/accapi.js:385
+#: ../modules/cash/lib/accapi.js:386 ../modules/cash/lib/accapi.js:387
+#: ../modules/cash/lib/accapi.js:388 ../modules/cash/lib/accapi.js:389
+#: ../modules/cash/lib/accapi.js:390 ../modules/cash/lib/accapi.js:391
+#: ../modules/cash/lib/accapi.js:392 ../modules/cash/lib/accapi.js:393
+#: ../modules/cash/lib/accapi.js:394 ../modules/cash/lib/accapi.js:395
+msgid "Received"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:384 ../modules/cash/lib/accapi.js:385
+#: ../modules/cash/lib/accapi.js:386 ../modules/cash/lib/accapi.js:387
+#: ../modules/cash/lib/accapi.js:388 ../modules/cash/lib/accapi.js:389
+#: ../modules/cash/lib/accapi.js:390 ../modules/cash/lib/accapi.js:391
+#: ../modules/cash/lib/accapi.js:392 ../modules/cash/lib/accapi.js:393
+#: ../modules/cash/lib/accapi.js:394 ../modules/cash/lib/accapi.js:395
+msgid "Spent"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:385
+msgid "Asset"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:386
+msgid "Credit card"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:387
+msgid "Liability"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:388
+msgid "Stock"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:389
+msgid "Mutual found"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:390
+msgid "Curency"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:392
+msgid "Expense"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:393
+msgid "Equity"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:394
+msgid "Recievable"
+msgstr ""
+
+#: ../modules/cash/lib/accapi.js:395
+msgid "Payable"
+msgstr ""
+
+#: ../modules/cash/lib/webapp.js:68
+msgid "Access denied"
+msgstr ""
+
+#: ../modules/cash/lib/webapp.js:252
+msgid "View cash data"
+msgstr ""
+
+#: ../modules/cash/lib/webapp.js:253
+msgid "Append new data"
+msgstr ""
+
+#: ../modules/cash/lib/webapp.js:254
+msgid "Edit cash data"
+msgstr ""
+
+#: ../modules/cash/lib/webapp.js:260
+msgid "Cash module"
+msgstr ""
+
+#: ../modules/cash/lib/webapp.js:261
+msgid "Personal and familty finances. Inspired by gnucash."
+msgstr ""
+
+#: ../modules/cash/pages/priceeditor.js:95
+msgid "Rate Currency Editor"
+msgstr ""
+
+#: ../modules/cash/pages/import.js:15 ../modules/cash/pages/import.js:40
+#: ../modules/cash/pages/import.js:87 ../modules/cash/pages/import.js:102
+msgid "GnuCash import"
+msgstr ""
+
+#: ../modules/cash/pages/accounts.js:88
+msgid "Accounts"
+msgstr ""
+
+#: ../modules/cash/pages/restoredefaults.js:14
+msgid "New register"
+msgstr ""
+
+#: ../modules/cash/pages/settings.js:19
+msgid "USD"
+msgstr ""
+
+#: ../modules/cash/pages/export.js:31 ../modules/cash/pages/export.js:60
+#: ../modules/cash/pages/export.js:122
+msgid "Raw import"
+msgstr ""
+
+#: ../modules/cash/pages/index.js:53
+msgid "Home"
+msgstr ""

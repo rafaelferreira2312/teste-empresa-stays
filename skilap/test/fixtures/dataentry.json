@@ -1,0 +1,166 @@
+{
+	"superuser":{
+		"login":"admin",
+		"password":"skilap"
+	},
+	"guest":{
+		"timezone":"(GMT)",
+		"language":"English"
+	},
+	"users":[
+		{
+			"firstName":"Tester",
+			"lastName":"One",
+			"login":"tester1",
+			"password":"123456",
+			"language":"English",
+			"permissions":[
+			]
+		},
+		{
+			"firstName":"user1",
+			"lastName":"Tester",
+			"login":"tester2",
+			"password":"1234567",
+			"language":"English"
+		}
+	],
+	"accounts":[
+		{
+			"name": "Test_root_acc_1",
+			"parent":"Root",
+			"currency":"USD"
+		},
+		{
+			"name": "Test_child_acc_1",
+			"name_new": "Test_child_acc_2",
+			"parent":"Test_root_acc_1",
+			"currency":"EUR"
+		},
+		{
+			"name": "Test_root_acc_2",
+			"parent":"Root",
+			"currency":"USD"
+		},
+		{
+			"name": "Test_RUB",
+			"parent":"Root",
+			"currency":"RUB"
+		}
+	],
+	"trs":[
+		{
+			"name": "My wallet",
+			"parent": "Cash",
+			"date": "06/06/2013",
+			"num":"test1",
+			"description":"test1",
+			"path":"Life::Food",
+			"deposite":"2*10 + 100 - 5*4",
+			"deposit":"100.00",
+			"deposit_cur":"$ 100.00",
+			"total":"100.00",
+			"total_cur":"$ 100.00",
+			"name1":"Life",
+			"name2":"Food"
+		},
+		{
+			"name": "My wallet",
+			"parent": "Cash",
+			"date": "07/06/2013",
+			"num":"test2",
+			"description":"test2",
+			"path":"Credit Cards::My card",
+			"deposit":"123.45",
+			"total":"123.45",
+			"total_cur":"$ 123.45",
+			"deposit_cur":"$ 123.45",
+			"name1":"Credit Cards",
+			"name2":"My card"
+		},
+		{
+			"name": "My wallet",
+			"parent": "Cash",
+			"date": "08/06/2013",
+			"num":"test3",
+			"description":"test3",
+			"path":"Hobby::Charity",
+			"deposit":"50.00",
+			"withdrawal":"50.00",
+			"total":"-50.00",
+			"name1":"Hobby",
+			"name2":"Charity"
+		},
+		{
+			"name": "My wallet",
+			"parent": "Cash",
+			"date": "05/06/2013",
+			"num":"test1",
+			"description":"test1",
+			"path":"MyTest1::MyTest2",
+			"deposit":"100.00",
+			"total":"100.00",
+			"name1":"MyTest1",
+			"name2":"MyTest2"
+		},
+		{
+			"name1":"MyTest1",
+			"name2":"MyTest3"
+		},
+		{
+			"name": "My wallet",
+			"parent": "Cash",
+			"date": "08/06/2013",
+			"date1": "09/06/2013",
+			"num":"test2",
+			"description":"test2",
+			"path":"Life::Food",
+			"deposit":"100.00",
+			"total":"0.00",
+			"name1":"Life",
+			"name2":"Food",
+			"split3n":"Real assets::Goods",
+			"split3v":"120.00",
+			"split4n":"Real assets::Furniture",
+			"split4n1":"Furniture",
+			"split4v":"150.00",
+			"v2":"200.00",
+			"t1":"-100.00",
+			"t2":"0.00",
+			"t3":"-200.00",
+			"t4":"-100.00"
+		},
+		{
+			"name": "My wallet",
+			"parent": "Cash",
+			"deposit":"100.00",
+			"deposit1":"50.00",
+			"mtotal":"3,000.00",
+			"mtotal1":"1,500.00",
+			"newcurr":"руб",
+			"newdeposit":"1.67"
+		}
+	],
+	"rates":[
+		{
+			"name1": "USD",
+			"name2": "RUB",
+			"date": "07/25/2003",
+			"rate": "30",
+			"newrate": "60"
+		},
+		{
+			"name1": "RUB",
+			"name2": "USD",
+			"date": "07/25/2003",
+			"rate": "0.0333333",
+			"newrate": "0.03"
+		}
+	],
+	"cashimport":{
+		"file": "/samples/home.xml",
+		"parsedtext":"File parsed. It contains: 4320 transactions, 63 accounts",
+		"finishedtext":"Data saved, 4320 transactions and 63 accounts were imported",
+		"sum":"958,589.19"
+	}
+}

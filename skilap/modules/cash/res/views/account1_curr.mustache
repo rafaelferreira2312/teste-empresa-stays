@@ -1,0 +1,258 @@
+<div id="{{uniq}}" class="modal hide fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+	<div class="modal-header">
+		<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+		<h3 id="myModalLabel">{{#i18n}}Create multicurrency transaction?{{/i18n}}</h3>
+	</div>
+	<div class="modal-body">
+		<div class='localctx'></div>
+		<form class="form-horizontal" method="POST">
+			<fieldset>
+				<div class="control-group">
+					<label class='control-label'>{{#i18n}}Direction{{/i18n}}:</label>
+					<div class="controls">
+						<label class='radio inline'>
+							<input type="radio" name="direction" id="plain" checked>{{#i18n}}Sell{{/i18n}} {{curr1}}, {{#i18n}}buy{{/i18n}} {{curr2}}
+						</label>
+						<label class='radio inline'>
+							<input type="radio" name="direction" id="inverse">{{#i18n}}Sell{{/i18n}} {{curr2}}, {{#i18n}}buy{{/i18n}} {{curr1}}
+						</label>
+					</div>
+				</div>
+				<div class="control-group">
+					<label class="control-label" for="rate">{{#i18n}}Rate{{/i18n}}:</label>
+					<div class="controls">
+						<div class="input-prepend input-append">
+							<span class="add-on" id="first_cur">1x {{curr1}}</span>
+							<input class="input-small" type="text" name="rate" id="rate" data-value="{{rate}}" value="{{rate}}" class="text ui-widget-content ui-corner-all" />
+							<span class="add-on" id="second_cur">{{curr2}}</span>
+							<button class="btn" type="button" id="rate_lock" ><i class="icon-unlock"></i></button>
+						</div>
+					</div>
+				</div>
+				<div class="control-group">
+					<label class='control-label'>{{#i18n}}Update prices{{/i18n}}:</label>
+					<div class="controls">
+						<input id="updateprice" type="checkbox">
+					</div>
+				</div>
+				<div class="control-group">
+					<label class="control-label" for="sell">{{#i18n}}Sell{{/i18n}}:</label>
+					<div class="controls">
+						<div class="input-append">
+							<input class="input-small" type="text" name="sell" id="sell" data-value="{{val}}" value="{{val}}" class="text ui-widget-content ui-corner-all" />
+							<span class="add-on" id="sell_cur">{{curr1}}</span>
+							<button class="btn" id="sell_lock"><i class="icon-unlock"></i></button>
+						</div>
+					</div>
+				</div>
+				<div class="control-group">
+					<label class="control-label" for="buy">{{#i18n}}Buy{{/i18n}}:</label>
+					<div class="controls">
+						<div class="input-append">
+							<input class="input-small" type="text" name="buy" id="buy" data-value="{{quantity}}" value="{{quantity}}" class="text ui-widget-content ui-corner-all" readonly />
+							<span class="add-on" id="buy_cur">{{curr2}}</span>
+							<button class="btn" id="buy_lock"><i class="icon-lock"></i></button>
+						</div>
+					</div>
+				</div>
+			</fieldset>
+		</form>
+	</div>
+	<div class="modal-footer">
+		<button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+		<button class="btn btn-primary" id="save">Create</button>
+	</div>
+</div>
+<script>
+require(["jquery","safe","jquery-block"],function($, safe){
+	$(function(e) {
+		var save = false;
+		var rval = parseFloat('{{rate}}');
+		var bval = 0;
+		var sval = 0;
+		var val = parseFloat("{{val}}");
+		var curr1 = "{{curr1}}";
+		var curr2 = "{{curr2}}";
+		var date = "{{date}}";
+		var reverse = false;
+		var bs = "{{bs}}";
+		var evalNumericField = function(field){
+			return eval(field.replace(/[^\d\+-/\*()\.,]+/g, '').toString());
+		};
+
+		var $form = $("#{{uniq}}");
+		var $rate = $form.find("#rate");
+		var $quantity = $form.find("#quantity");
+		var $save = $form.find("#save1");
+		var $rate_lock = $form.find("#rate_lock");
+		var $sell_lock = $form.find("#sell_lock");
+		var $buy_lock = $form.find("#buy_lock");
+		var $sell = $form.find("#sell");
+		var $buy = $form.find("#buy");
+		var $sell_cur = $form.find("#sell_cur");
+		var $buy_cur = $form.find("#buy_cur");
+		var $plain = $form.find("#plain");
+		var $inverse = $form.find("#inverse");
+		$form.on('hidden',function () {
+			if (!save)
+				$form.trigger("frm-closed");
+			$form.remove();
+		});
+		$form.find("#save").on("click", function (event) {
+			save = true;
+			event.preventDefault();
+			$form.trigger("frm-saved", [rval, sval, bval, $form.find('#inverse')[0].checked, $form.find('#updateprice')[0].checked]);
+		})
+		$rate.on('keyup',function () {
+			updateVal();
+			updateSave();
+		});
+		$sell.on('keyup',function () {
+			updateVal();
+			updateSave();
+		});
+		$buy.on('keyup',function () {
+			updateVal();
+			updateSave();
+		});
+		function updateSave() {
+			if (_.isNumber(rval) && _.isNumber(bval) && _.isNumber(sval) && !_.isNaN(rval) && !_.isNaN(sval) && !_.isNaN(bval))
+				$save.removeAttr('disabled');
+			else
+				$save.attr('disabled', true);
+		}
+
+		function updateViews(check, uncheck1, uncheck2) {
+			var $check = $form.find("#" + check);
+			$check_lock = $form.find("#" + check + "_lock i");
+			$check.attr('readonly', true);
+			$check_lock.removeClass("icon-unlock");
+			$check_lock.addClass("icon-lock");
+
+			$uncheck1 = $form.find("#" + uncheck1);
+			$uncheck1_lock = $form.find("#" + uncheck1 + "_lock i");
+			$uncheck1.removeAttr('readonly');
+			$uncheck1_lock.addClass("icon-unlock");
+			$uncheck1_lock.removeClass("icon-lock");
+
+			$uncheck2 = $form.find("#" + uncheck2);
+			$uncheck2_lock = $form.find("#" + uncheck2 + "_lock i");
+			$uncheck2.removeAttr('readonly');
+			$uncheck2_lock.addClass("icon-unlock");
+			$uncheck2_lock.removeClass("icon-lock");
+		}
+
+		$rate_lock.on("click", function (event) {
+			event.preventDefault();
+			if ($rate.attr('readonly')) {
+				updateViews('sell', 'rate', 'buy');
+			} else {
+				updateViews('rate', 'sell', 'buy');
+			}
+		})
+
+		$sell_lock.on("click", function (event) {
+			event.preventDefault();
+			if ($sell.attr('readonly')) {
+				updateViews('buy', 'sell', 'rate');
+			} else {
+				updateViews('sell', 'rate', 'buy');
+			}
+		})
+
+		$buy_lock.on("click", function (event) {
+			event.preventDefault();
+			if ($buy.attr('readonly')) {
+				updateViews('sell', 'rate', 'buy');
+			} else {
+				updateViews('buy', 'sell', 'rate');
+			}
+		})
+
+		function roundVal(val) {
+			return parseFloat(val).toFixed(2);
+		}
+
+		function updateRate(rate) {
+			rval = parseFloat(rate).toFixed(4);
+			if (rate >= 1) {
+				$form.find("#first_cur").text("1x " + curr1);
+				$form.find("#second_cur").text(curr2);
+				reverse = false;
+				$rate.val(rval);
+			} else {
+				$form.find("#first_cur").text("1x " + curr2);
+				$form.find("#second_cur").text(curr1);
+				reverse = true;
+				$rate.val((1/rate).toFixed(4));
+			}
+			$form.find("#sell_cur").text(curr1);
+			$form.find("#buy_cur").text(curr2);
+			$rate.attr('value', $rate.val());
+		}
+		if (bs)
+			updateViews('sell', 'rate', 'buy');
+		updateRate($rate.val());
+		updateVal();
+		function updateVal() {
+			rval = parseFloat($rate.val());
+			sval = evalNumericField($sell.val());
+			bval = evalNumericField($buy.val());
+			if ($rate.attr('readonly')) {
+				updateRate(bval/sval);
+			} else if ($sell.attr('readonly')) {
+				if (!reverse)
+					sval = roundVal(bval/rval);
+				else
+					sval = roundVal(bval*rval);
+				$sell.val(sval);
+				$sell.attr('value', sval);
+			} else if ($buy.attr('readonly')) {
+				if (!reverse)
+					bval = roundVal(sval*rval);
+				else
+					bval = roundVal(sval/rval);
+				$buy.val(bval);
+				$buy.attr('value', bval);
+			}
+		}
+
+		$plain.on("change", function (event) {
+			var tmp = curr1; curr1 = curr2; curr2 = tmp;
+			$form.block();
+			safe.run(function (cb) {
+				require(['api','clitpl','safe','bootstrap'], function (api, tf, safe) {
+					api.call('cash.getCmdtyPrice', {id: curr1}, {id: curr2}, date, 'safe', safe.sure(cb, function (price) {
+						if ($rate.attr('readonly'))
+							updateViews('buy', 'sell', 'rate');
+						updateRate(price);
+						updateVal();
+						cb();
+					}))
+				},cb)
+			}, function (err) {
+				if (err) appError(err);
+				$form.unblock();
+			})
+		})
+		$inverse.on("change", function (event) {
+			var tmp = curr1; curr1 = curr2; curr2 = tmp;
+			$form.block();
+			safe.run(function (cb) {
+				require(['api','clitpl','safe','bootstrap'], function (api, tf, safe) {
+					api.call('cash.getCmdtyPrice', {id: curr1}, {id: curr2}, date, 'safe', safe.sure(cb, function (price) {
+						if ($rate.attr('readonly'))
+							updateViews('buy', 'sell', 'rate');
+						updateRate(price);
+						updateVal();
+						cb();
+					}))
+				},cb)
+			}, function (err) {
+				if (err) appError(err);
+				$form.unblock();
+			})
+		})
+	})
+}, appError)
+</script>

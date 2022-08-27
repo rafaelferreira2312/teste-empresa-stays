@@ -1,0 +1,1041 @@
+<div id="accounts">
+<div class="row-fluid acc-container">
+	<div class="span11" style="width:94%">
+		<table class="table acc-table table-bordered" data-currency="{{currency}}">
+			<thead>
+				<th class="value" width="70em">{{#i18n}}Date{{/i18n}}</th>
+				<th class="number" width="30em">{{#i18n}}Num{{/i18n}}</th>
+				<th class="description" width="360em" >{{#i18n}}Description{{/i18n}}</th>
+				<th class="account" width="360em" >{{#i18n}}Transfer{{/i18n}}<form name="splitModeForm"  class="pull-right" style="margin:0"><label><input class="splitMode" type="checkbox" style="margin:0;"></form> {{#i18n}}Split{{/i18n}}</label></th>
+				<th class="rstate" width="10em" >R</th>
+				<th class="value" width="120em" halign="right">{{verbs.recv}}</th>
+				<th class="value" width="120em" halign="right">{{verbs.send}}</th>
+				<th class="value" width="140em" >{{#i18n}}Balance{{/i18n}}</th>
+				<th class="settings" width="40em" ></th>
+			</thead>
+			<tbody>
+
+			</tbody>
+		</table>
+	</div>
+	<div class="span1" style="width:3%">
+		<div class="acc-scroll">
+			<div class="acc-scroll-inner"></div>
+		</div>
+	</div>
+</div>
+</div>
+<script>
+require(["jquery","safe","lodash","jquery-block","jquery-mousewheel","bootstrap-datepicker","bootstrap-typeahead"], function ($,safe,_) {
+$(function() {
+	$page = $("#accounts");
+	$page.addClass("ready");
+	var rowHeight = 31,
+		rowsLimit = 20,
+		iTotalRecords = {{accountSize}},
+		windowBottomOffset = 130,
+		selectedRowId = null,
+		isRecordAdded = false,
+		isRecordUpdated = false,
+		$container = $(".acc-container"),
+		lastModData = null;
+
+	$container.on('mousewheel', function(event, delta, deltaX, deltaY) {
+		var $accScroll = $container.find(".acc-scroll");
+		$accScroll.scrollTop($accScroll.scrollTop() - deltaY*rowHeight);
+	});
+
+	$container.hover(function() {
+		$(document).bind('mousewheel DOMMouseScroll',function(e){
+			stopWheel(e);
+		});
+	}, function() {
+		$(document).unbind('mousewheel DOMMouseScroll');
+	});
+
+	$(window).on('resize',function(){
+		var oldRowsLimit = rowsLimit;
+		ajustGridSize($container);
+		$container.find(".acc-scroll").scrollTop($container.find(".acc-scroll").scrollTop() - (rowsLimit-oldRowsLimit)*rowHeight);
+	});
+
+	$container.on("click",".acc-item",function(){
+		var $self = $(this);
+		if($self.hasClass("selected"))
+			return false;
+		var $record = $self.closest(".acc-item-record");
+		safe.run(function(cb){
+			require(["async","api"],function(async,api){
+				async.series([
+					function(cb1){
+						if($record.hasClass("selected")){
+							if($self.hasClass("selected"))
+								return cb1();
+							updateOldColumnSelected($record.find(".acc-item.selected"), cb1);
+						}
+						else{
+							var $accItem = $container.find(".acc-item.selected");
+							if($accItem.length == 0)
+								$accItem = $container.find(".acc-item-split.selected");
+							updateOldColumnSelected($accItem, function(err, res){
+								if (err) return cb(err, res);
+								updateRecord($container.find(".acc-item-record.selected"),false,safe.sure(cb1,function(result){
+									$container.find(".acc-item-record").removeClass("selected");
+									$record.addClass("selected");
+									selectedRowId = $record.data("id");
+									toggleSplitRows($container);
+									if(result && result.tr){
+										isRecordUpdated = true;
+										updateContainer();
+									}
+									else{
+										cb1();
+									}
+								}));
+							})
+						}
+					},
+					function(cb1){
+						if($self.hasClass("selected"))
+							return cb1();
+						handleColumnClick($self,cb1);
+					}
+				],cb);
+			},cb);
+		},function(err){
+			if(err && err != 1) appError(err);
+		});
+	});
+
+	$container.on("click",".acc-item-split",function(){
+		var $self = $(this);
+		if($self.hasClass("selected"))
+			return false;
+		var $splitrecord = $self.closest(".acc-item-record-split");
+		var $mainrecord = $container.find(".acc-item-record[data-id=\""+$splitrecord.data("recordid")+"\"]");
+		var $splitrecords = $container.find(".acc-item-record-split[data-recordid=\""+$splitrecord.data("recordid")+"\"]");
+		safe.run(function(cb){
+			require(["async","api"],function(async,api){
+				async.series([
+					function(cb1){
+						updateOldColumnSelected($mainrecord.find(".acc-item.selected"), cb1);
+					},
+					function(cb1){
+						updateOldColumnSelected($splitrecords.find(".acc-item-split.selected"), cb1);
+					},
+					function(cb1){
+						handleColumnClick($self,cb1);
+					}
+				],cb);
+			},cb);
+		},function(err){
+			if(err && err != 1) appError(err);
+		});
+	});
+
+	$container.on('keydown','.acc-item',function(e){
+		if(e.keyCode == 9){
+			$(".typeahead.dropdown-menu").remove();
+			var $nextCol = $(this).next(".acc-item");
+			var splitMode = $container.find(".splitMode").is(":checked");
+			if($(this).data("name") == "description" && splitMode) {
+				var $nextRow = $(this).parent().next(".acc-item-record-split")
+				$nextCol = $nextRow.find(".acc-item-split:first").next();
+				$nextCol.click();
+				return false;
+			}
+			if($nextCol.length > 0){
+				var colName = $nextCol.data("name");
+				if(colName == "rstate"){
+					$nextCol = $nextCol.next(".acc-item");
+				}
+				else if(colName == "total"){
+					/* get next main row */
+					var $rows = $(this).parent().nextUntil(".acc-item-record");
+					var $nextRow = $rows.eq($rows.length-1).next();
+					$nextCol = $nextRow.find(".acc-item:first");
+					if($nextCol.length == 0){
+						return addNewRecord($(this));
+					}
+				}
+				$nextCol.click();
+			}
+			return false;
+		}
+		if(e.which == 13){
+			if(!$(".typeahead.dropdown-menu").is(":visible")){
+				/* get next main row */
+				$(".typeahead.dropdown-menu").remove();
+				var $rows = $(this).parent().nextUntil(".acc-item-record");
+				var $nextRow = $rows.eq($rows.length-1).next();
+				$nextCol = $nextRow.find(".acc-item:first");
+				if($nextCol.length == 0){
+					return addNewRecord($(this));
+				}
+				else
+					$nextCol.click();
+				return false;
+			}
+		}
+		if(e.which == 27){
+			if ($(".typeahead.dropdown-menu").is(":visible")) {
+				$(".typeahead.dropdown-menu").remove();
+				return false;
+			}
+			updateContainer();
+			return false;
+		}
+	});
+
+	$container.on('keydown','.acc-item-split',function(e){
+		if(e.keyCode == 9){
+			$(".typeahead.dropdown-menu").remove();
+			var $nextCol = $(this).next(".acc-item-split");
+			if($nextCol.length > 0){
+				var colName = $nextCol.data("name");
+				if(colName == "rstate"){
+					$nextCol = $nextCol.next(".acc-item-split");
+				}
+				else if(colName == "total"){
+					/* get next main row */
+					var $nextRow = $(this).parent().next(".acc-item-record-split")
+					$nextCol = $nextRow.find(".acc-item-split:first").next();
+				}
+				$nextCol.click();
+			}
+			return false;
+		}
+		if(e.which == 13){
+			if(!$(".typeahead.dropdown-menu").is(":visible")){
+				var $self = $(this);
+				var $update = $container.find(".acc-item-record.selected");
+				var $update1 = $container.find(".acc-item-split.selected");
+				updateOldColumnSelected($update1, function(err, res) {
+					if (err) return;
+					updateRecord($update,true,function(err, result){
+						toggleSplitRows($container);
+						isRecordUpdated = true;
+						updateContainer();
+
+						if ($update.data("id") == "blank")
+							setTimeout(function () {
+								var $selected = $container.find(".acc-item-record.selected");
+								var $nextCol = $selected.find(".acc-item:first").next();
+								$nextCol.click();
+							},200)
+					});
+				});
+			}
+		}
+		if(e.which == 27){
+			if ($(".typeahead.dropdown-menu").is(":visible")) {
+				$(".typeahead.dropdown-menu").remove();
+				return false;
+			}
+			updateContainer();
+			return;
+		}
+	});
+
+	$(document).on("click",function(e){
+		if ($(".modal").length>0) return;
+		if($(e.target).closest('.acc-container').length == 0){
+			var $accItemSelected = $container.find(".acc-item-record.selected .acc-item.selected");
+			if($accItemSelected.length){
+				updateOldColumnSelected($accItemSelected, function(){});
+			}
+			else{
+				updateOldColumnSelected($container.find(".acc-item-record-split.selected .acc-item-split.selected"), function(){});
+			}
+		}
+	});
+
+	$container.on("click",".acc-item .delete-record",function(){
+		var recordId = $(this).closest(".acc-item-record").data("id");
+		$container.block();
+		safe.run(function(cb){
+			require(["api"],function(api){
+				api.call("cash.clearTransactions",recordId,safe.sure(cb,function(){
+					iTotalRecords--;
+					updateContainer();
+					//$container.find(".acc-scroll").scroll();
+					cb();
+				}));
+			},cb);
+		},function(err){
+			if(err){
+				appError(err);
+			}
+			$container.unblock();
+		});
+		return false;
+	});
+
+	$container.on("click",".acc-item-split .deleteSplit",function(){
+		var $row = $(this).closest(".acc-item-record-split");
+		var $item = $row.find(".acc-item-split[data-name=\"deposit\"]");
+		$item.text("");
+		$item.data("val", "")
+		$item = $row.find(".acc-item-split[data-name=\"withdrawal\"]");
+		$item.text("");
+		$item.data("val", "")
+		$row.hide();
+		return false;
+	});
+
+	$container.find("form[name=\"splitModeForm\"]").get(0).reset();
+	$container.on("change",".splitMode",function(){
+		toggleSplitRows($container);
+	});
+
+	ajustGridSize($container);
+	initGrid($container);
+
+	function ajustGridSize($container){
+		rowsLimit = Math.floor(($(window).height()-windowBottomOffset)/rowHeight);
+		var tableHeight = rowsLimit*rowHeight;
+	}
+
+	var scrollTimer = null;
+	function attachScrollEvent($container){
+		$container.find(".acc-scroll").scroll(function(){
+			// don't update ourselves while we are "dirty"
+			// i.e. unsaved or unprocessed data are exist
+			if ($container.hasClass("container-dirty")) return;
+			if (scrollTimer)
+				clearTimeout(scrollTimer);
+			var $this = $(this);
+			scrollTimer = setTimeout(function () {
+				var scrollPosition = $this.scrollTop();
+				var offset = Math.floor((scrollPosition)/rowHeight);
+				if(isRecordAdded || isRecordUpdated){
+					$container.block();
+				}
+
+				loadGrid($container,offset,rowsLimit,function(){$container.unblock();});
+			},100)
+		});
+	}
+
+	function updateContainer() {
+		if (scrollTimer)
+			clearTimeout(scrollTimer);
+		scrollTimer = setTimeout(function () {
+			var scrollPosition = $container.find(".acc-scroll").scrollTop();
+			var offset = iTotalRecords - Math.floor((iTotalRecords*rowHeight-scrollPosition)/rowHeight);
+			if(isRecordAdded || isRecordUpdated){
+				$container.block();
+			}
+			loadGrid($container,offset,rowsLimit,function(){
+				updateInnerScrollHeight();
+				$container.find(".acc-scroll").scrollTop(iTotalRecords*rowHeight - rowsLimit*rowHeight);
+				$container.unblock();
+			});
+		},100)
+	}
+
+	function stopWheel(e){
+		if(!e){ /* IE7, IE8, Chrome, Safari */
+			e = window.event;
+		}
+		if(e.preventDefault) { /* Chrome, Safari, Firefox */
+			e.preventDefault();
+		}
+		e.returnValue = false; /* IE7, IE8 */
+	}
+
+	function initGrid($contaner){
+		$container.block();
+		safe.run(function(cb){
+			var offset = iTotalRecords-rowsLimit;
+			if(offset < 0)
+				offset =0;
+			$container.unblock();
+			loadGrid($container,offset,rowsLimit,safe.sure(cb,function(){
+				updateInnerScrollHeight();
+				$container.find(".acc-scroll").scrollTop(iTotalRecords*rowHeight - rowsLimit*rowHeight);
+				setTimeout(function(){attachScrollEvent($container)},100);
+				cb();
+			}))
+		},function(err){
+			if(err){
+				appError(err);
+				container.unblock();
+			}
+		});
+	}
+
+	function loadGrid($container,offset,limit,cb){
+		var srowId = $container.find(".acc-item-record.selected").data("id");
+		if(srowId)
+			 selectedRowId = srowId;
+		safe.run(function(cb1){
+			getData(offset,limit,safe.sure(cb1,function(data){
+				if (lastModData)
+					data.aaData[data.aaData.length - 1].date = lastModData;
+				require(["clitpl"],function(tf){
+					tf.render("account_items",{items:data.aaData,oddeven:0,splitMode:$container.find(".splitMode").is(":checked")},safe.sure(cb1,function(text,ctx){
+						$container.find("tbody").html(text);
+						$container.find(".acc-item-record").filter(':even').addClass("even");
+						$container.find(".acc-item-record").filter(':odd').addClass("odd");
+						$container.find(".acc-item-record[data-id=\""+selectedRowId+"\"]").addClass("selected");
+						$container.find(".acc-scroll").height($container.find(".acc-table").height()).show();
+						if(isRecordAdded){
+							isRecordAdded = false;
+							$container.find(".acc-item-record[data-id='blank'] .acc-item:first").next().click();
+						}
+						if(isRecordUpdated){
+							isRecordUpdated = false;
+						}
+						// mark that container is fresh again
+						$container.removeClass("container-dirty");
+						toggleSplitRows($container);
+						cb();
+					}));
+				},cb1);
+			}));
+		},function(err){
+			if(err) appError(err);
+			cb(err);
+		})
+	};
+
+	function getData(offset,limit,cb){
+		var jqXHR = $.ajax( {
+			"url": "{{prefix}}/account/{{accountId}}/getgrid",
+			"data":{"sEcho":1,"iDisplayLength":limit,"iDisplayStart":offset},
+			"dataType": "json",
+			"cache": false
+		});
+		jqXHR.done(function(data){
+			cb(null,data);
+		});
+	}
+
+
+	function updateRecord($record,force,cb){
+		if(!$record || $record.length == 0)
+			return cb();
+
+		var origData = {
+			date: $record.find(".acc-item[data-name=\"date\"]").data("origval"),
+			num: $record.find(".acc-item[data-name=\"num\"]").data("origval").toString(),
+			description: $record.find(".acc-item[data-name=\"description\"]").data("origval"),
+			splits:[]
+		};
+
+		var data = {
+			date: $record.find(".acc-item[data-name=\"date\"]").data('val'),
+			num: $record.find(".acc-item[data-name=\"num\"]").text(),
+			description: $record.find(".acc-item[data-name=\"description\"]").text(),
+			splits:[]
+		};
+		var saveRate = $record.data("saveRate");
+		if (saveRate) data.saveRate = saveRate;
+
+		var trId = $record.data("id");
+		if(trId && trId != "blank"){
+			data.id = trId;
+			origData.id = trId;
+		}
+		$record.parent().find(".acc-item-record-split[data-recordid=\""+$record.data("id")+"\"]").each(function(i,item){
+			var accountId = $(item).find(".acc-item-split[data-name=\"path\"]").data("accid");
+			if(accountId != ""){
+				var spl = {
+					accountId:accountId,
+					num: $(item).find(".acc-item-split[data-name=\"num\"]").text(),
+					description: $(item).find(".acc-item-split[data-name=\"description\"]").text(),
+					path: $(item).find(".acc-item-split[data-name=\"path\"]").text(),
+					deposit: $(item).find(".acc-item-split[data-name=\"deposit\"]").data("val"),
+					withdrawal: $(item).find(".acc-item-split[data-name=\"withdrawal\"]").data("val"),
+					rstate: $(item).find(".acc-item-split[data-name=\"rstate\"]").text() || "n"
+				};
+				var deposit_value = $(item).find(".acc-item-split[data-name=\"deposit\"]").data("value");
+				var withdrawal_value = $(item).find(".acc-item-split[data-name=\"withdrawal\"]").data("value");
+				if (deposit_value) spl.deposit_value = deposit_value;
+				if (withdrawal_value) spl.withdrawal_value = withdrawal_value;
+				var origspl = {
+					accountId:accountId,
+					num: $(item).find(".acc-item-split[data-name=\"num\"]").data("origval").toString(),
+					description: $(item).find(".acc-item-split[data-name=\"description\"]").data("origval"),
+					path: $(item).find(".acc-item-split[data-name=\"path\"]").data("origval"),
+					deposit: $(item).find(".acc-item-split[data-name=\"deposit\"]").data("origval"),
+					withdrawal: $(item).find(".acc-item-split[data-name=\"withdrawal\"]").data("origval"),
+					rstate: $(item).find(".acc-item-split[data-name=\"rstate\"]").data("origval") || "n"
+				};
+				deposit_value = $(item).find(".acc-item-split[data-name=\"deposit\"]").data("origvalue");
+				withdrawal_value = $(item).find(".acc-item-split[data-name=\"withdrawal\"]").data("origvalue");
+				if (deposit_value) origspl.deposit_value = deposit_value;
+				if (withdrawal_value) origspl.withdrawal_value = withdrawal_value;
+				var splId = $(item).data("_id");
+				if(splId != "" && splId != "new"){
+					spl._id = splId;
+					origspl._id = splId;
+				}
+				data.splits.push(spl);
+				origData.splits.push(origspl);
+			}
+		});
+
+		if(!force && _.isEqual(data,origData)) {
+			return cb();
+		}
+		if ($record.data("id") == 'blank')
+			lastModData = data.date;
+
+		$container.block();
+		var jqXHR = $.ajax({
+			"url": "{{prefix}}/account/{{accountId}}/updaterow",
+			"data":data,
+			"type":"POST",
+			"dataType": "json",
+			"cache": false
+		});
+		jqXHR.done(function(result){
+			$container.unblock();
+			if(result.error){
+				cb(result.error);
+			}
+			else{
+				var isNew = false;
+				if(!data.id){
+					isNew =true;
+					iTotalRecords++;
+					updateInnerScrollHeight();
+				}
+				cb(null,{isNew:isNew,tr:result.tr});
+			}
+		});
+		jqXHR.fail(function(result){
+			$container.unblock();
+			var error={error:'invalidResponse'};
+			cb(error);
+		});
+	}
+
+	function validateEditedColumn($column, data, cb) {
+		var columnName = $column.data("name");
+		if(columnName == "path")
+			validatePathColumn($column,data, cb)
+		else if (columnName == "deposit" || columnName == "withdrawal")
+			validateQuantityColumn($column,data, cb)
+		else if (columnName == "date") {
+			// simple case is just accept value from input
+			data.text = $column.find("input").val();
+			data.attr['data-val'] = $column.find("input").data('datepicker').getDate();
+			cb();
+		}
+		else {
+			// simple case is just accept value from input
+			data.attr['data-val'] = data.text = $column.find("input").val()
+			cb();
+		}
+	}
+
+	// we can type path to non existent account, if so, we need to ask
+	// confirmation for its creation and create it
+	function validatePathColumn($column, data, cb) {
+		var $elem = $column.find("input");
+		var path = $elem.val();
+		data.attr['data-val'] = data.text = path;
+
+		// not modifications, no validations
+		if (path == $column.data("origval"))
+			return cb();
+
+		// check if value is obtained using autocomplete and unchanged
+		if ($elem.data("accpath")==path) {
+			// if so we not need to check server for details
+			data.attr['data-accid'] = $elem.data("accid");
+			data.attr['data-currency'] = $elem.data("currency");
+			data.attr['data-relaccid'] = $elem.data("accid");
+			return cb();
+		}
+
+		// more heavy checks
+		$container.block();
+		safe.run(function (cb) {
+			require(['api'], function (api) {
+				api.call('cash.getAccountByPath',path,function (err, acc) {
+					if (err) {// meaning no such account
+						require(['clitpl','safe','bootstrap'], function (tf,safe) {
+							tf.render('account1_create', {}, safe.sure(cb,function(text, ctx) {
+								$container.unblock();
+								$("body").append(text);
+								var $modal = $("#"+ctx.uniq).modal();
+								$modal.on("frm-saved", function (e) {
+									api.call('cash.ensureAccount', path, '{{accountId}}', safe.sure(cb, function (acc) {
+										data.attr['data-accid'] = acc._id;
+										data.attr['data-currency'] = acc.cmdty.id;
+										data.attr['data-relaccid'] = acc._id;
+										$modal.modal('hide')
+										cb();
+									}))
+								})
+								$modal.on("frm-closed", function (e) {
+									$modal.modal('hide');
+									cb(new Error("cancel"));
+								})
+							}))
+						},cb)
+					} else {
+						data.attr['data-accid'] = acc._id;
+						data.attr['data-currency'] = acc.cmdty.id;
+						data.attr['data-relaccid'] = acc._id;
+						cb();
+					}
+				})
+			},cb)
+		}, function (err) {
+			$container.unblock();
+			cb(err);
+		})
+	}
+
+	// validate editing of value column (depist, withdrawal)
+	function validateQuantityColumn($column, data, cb) {
+		var $record = $column.closest(".acc-item-record");
+		var $split,$esplit,mainCurr,editCurr,otherCurr;
+
+		if ($record.length==0) {
+			// means we are editing split
+			$esplit = $split = $column.closest(".acc-item-record-split");
+			$record = $split.closest("table").find("[data-id="+$split.data('recordid')+"]");
+			editCurr = $esplit.data("currency");
+		} else {
+			editCurr = $record.data("currency");
+			var $splits = $record.closest("table").find(".acc-item-record-split[data-recordid=\""+$record.data("id")+"\"]");
+			$split = $splits.find("[data-accid=\""+$column.data("relaccid")+"\"]");
+			$splits.each(function () {
+				var c = $(this).data("currency");
+				if (c && c!=$record.data("currency"))
+					editCurr = c;
+			})
+			$esplit = $record;
+		}
+		mainCurr=$record.data("currency")
+
+		// lets update edited text in place (will revert it back later
+		var ival = $column.find("input").val();
+
+		if(mainCurr && editCurr && mainCurr != editCurr){
+			var oldVal = $column.data('val');
+			if (ival==oldVal)
+				return cb(new Error("cancel"));
+			$column.data('val',ival);
+			var mainQnt = (eval($esplit.find('[data-name="deposit"]').data('val'))||0)-(eval($esplit.find('[data-name="withdrawal"]').data('val'))||0);
+			$column.data('val',oldVal);
+
+			$container.block();
+			safe.run(function (cb) {
+				var buyDir = mainQnt>=0?0:1; mainQnt = Math.abs(mainQnt);
+				var showOther = (editCurr==$split.data("currency"))?0:1;
+				buyDir = (buyDir+showOther)%2;
+
+				require(['api','clitpl','safe','bootstrap'], function (api,tf,safe) {
+					api.call('cash.getCmdtyPrice', {id: buyDir?editCurr:mainCurr}, {id: buyDir?mainCurr:editCurr}, new Date(), 'safe', safe.sure(cb, function (price) {
+						var _data = {
+							val: ((showOther+buyDir)%2)?mainQnt:mainQnt*price,
+							rate: price,
+							curr1: buyDir?editCurr:mainCurr,
+							curr2: buyDir?mainCurr:editCurr,
+							quantity: ((showOther+buyDir)%2)?mainQnt*price:mainQnt,
+							date: new Date(),
+							bs: 0
+						};
+
+						tf.render('account1_curr', _data, safe.sure(cb,function(text, ctx) {
+							$container.unblock();
+							$("body").append(text);
+							$modal = $("#"+ctx.uniq).modal();
+							$modal.on("frm-saved", function (e, rval, sval, bval, bchange, bsave) {
+								bchange = bchange?1:0;
+								var idx = (showOther+buyDir + bchange)%2;
+								$modal.modal('hide')
+
+								var m = [[['',''],['',''],['','']],[['',''],['',''],['','']]];
+
+								m[0][0][idx]=idx?sval:bval; m[0][1][idx]=idx?sval:bval; m[0][2][(idx+1)%2]=idx?bval:sval;
+								m[1][0][idx]=idx?sval:bval; m[1][1][idx]=idx?sval:bval; m[1][2][(idx+1)%2]=idx?sval:bval;
+
+								data.multicur = {m:m,rate:rval,saveRate:bsave};
+
+								cb();
+							})
+							$modal.on("frm-closed", function (e) {
+								$modal.modal('hide');
+								cb(new Error("cancel"));
+							})
+						}))
+					}))
+				},cb)
+			}, function (err) {
+				$container.unblock();
+				cb(err);
+			})
+		} else {
+			require(["clitpl"],function(tf){
+				ival = eval(ival)||null;
+				tf.render("grid_currency_field",{val:ival,cur:mainCurr},safe.sure(cb,function(text,ctx){
+					data.text = text.trim();
+					data.attr['data-val'] = ival;
+					data.attr['data-value'] = ival;
+					cb()
+				}))
+			},cb)
+		}
+	}
+
+
+	function updateOldColumnSelected($column, cb){
+		if(!$column || $column.length == 0 || !$column.data("editable"))
+			return cb();
+		var data = {text:"",attr:{}};
+		// remember if container already modified
+		var dirty = $container.hasClass("container-dirty")
+		// mark container dirty
+		$container.addClass("container-dirty");
+		validateEditedColumn($column, data, function (err) {
+			$column.find(".tdContentEditable").html("").hide();
+			$column.find(".tdContent").show();
+			$column.removeClass("selected");
+
+			if (err) {
+				// if we refuse to update unset dirty flag
+				if (!dirty)
+					$container.removeClass("container-dirty")
+				if (err.message == "cancel")
+					cb()
+				else
+					cb(err);
+			}
+			else
+				updateOldColumnSelectedHelper($column, data, cb);
+		})
+	}
+
+	function basicColumnUpdate($column, data) {
+		if (data.text!=null)
+			$column.find(".tdContent").text(data.text);
+		_.each(data.attr,function(v,k){
+			var dm = k.match(/data-(.*)/);
+			if (dm.length)
+				$column.data(dm[1],v);
+			$column.attr(k,v);
+		});
+	}
+
+	function updateOldColumnSelectedHelper($column, data, cb) {
+		$container.addClass("container-dirty");
+		var columnName = $column.data("name");
+		// check if we edited something in master row
+		var $record = $column.closest(".acc-item-record")
+		var basicUpdate = true;
+		if($record.length > 0){
+			var relaccid = $column.data("relaccid");
+			// if field has relaccid, then it means we have will need update related split
+			if(relaccid) {
+				var recordid = $record.data("id");
+				var $mainSplit =$record.parent().find(".acc-item-record-split[data-recordid=\""+recordid+"\"][data-accid=\""+relaccid+"\"]");
+				var $slaveSplit = $mainSplit.next().attr("name")=="blank"?$mainSplit.prev():$mainSplit.next();
+
+				// sometime we need to update row itself
+				if (columnName=="path") {
+					// main split should be updated as well
+					basicColumnUpdate($mainSplit, {attr:{'data-accid':data.attr['data-accid'],'data-currency':data.attr['data-currency']}})
+				}
+
+				// for simple (2 split) transaction we'll might need to modify other split values as well
+				// to keep them ballanced
+				if($record.data("multisplit") != 1 && (columnName == "deposit" || columnName == "withdrawal")){
+					var secondcol = {"deposit":"withdrawal","withdrawal":"deposit"};
+					if (!data.multicur)
+						basicColumnUpdate($slaveSplit.find("[data-name=\""+secondcol[columnName]+"\"]"),data);
+					else {
+						basicUpdate = false;
+						if (data.multicur.saveRate)
+							$record.data("saveRate",true);
+						// with multicurrency transaction there is much more things to update
+						var $e = [];
+						$e.push([$record.find('[data-name="deposit"]'),$record.find('[data-name="withdrawal"]'),$record]);
+						$e.push([$mainSplit.find('[data-name="deposit"]'),$mainSplit.find('[data-name="withdrawal"]'),$mainSplit]);
+						$e.push([$slaveSplit.find('[data-name="deposit"]'),$slaveSplit.find('[data-name="withdrawal"]'),$slaveSplit]);
+
+						var m = data.multicur.m;
+
+						var text = [];
+						for (var i=0; i<3; i++ ) {	for (var j=0; j<2; j++) {
+							basicColumnUpdate($e[i][j],{text:m[0][i][j],attr:{'data-val':m[0][i][j],'data-value':m[1][i][j]}})
+							text.push({v:m[0][i][j],c:$e[i][2].data("currency")})
+						}}
+
+						// update values to user readable format
+						safe.run(function (cb) {
+							require(["clitpl","async"],function(tf,async){
+								async.forEach(text, function (v,cb) {
+									tf.render("grid_currency_field",{val:v.v!=''?v.v:null,cur:v.c},safe.sure(cb,function(text,ctx){
+										v.t = text.trim();
+										cb()
+									}))
+								},cb)
+							},cb)
+						}, function () {
+							var k=0;
+							for (var i=0; i<3; i++ ) {	for (var j=0; j<2; j++) {
+								basicColumnUpdate($e[i][j],{text:text[k++].t})
+							}}
+						})
+					}
+				} else {
+					// related column
+					basicColumnUpdate($mainSplit.find("[data-name=\""+columnName+"\"]"),data);
+				}
+			}
+		}
+		else if($column.closest(".acc-item-record-split").length > 0){
+			var $record = $column.closest(".acc-item-record-split");
+
+			// sometime we need to update row itself
+			if (columnName=="path") {
+				basicColumnUpdate($record, {attr:{'data-accid':data.attr['data-accid'],'data-currency':data.attr['data-currency']}})
+			}
+
+			if (data.multicur) {
+				basicUpdate = false;
+				// with multicurrency transaction there is much more things to update
+				var $e = [];
+				$e.push([$record.find('[data-name="deposit"]'),$record.find('[data-name="withdrawal"]')]);
+
+				var m = data.multicur.m;
+
+				var text = [{v:m[1][2][1],c:$record.data('currency')},{v:m[1][2][0],c:$record.data('currency')}];
+
+				basicColumnUpdate($e[0][0],{text:text[0].t,attr:{'data-val':m[1][2][1],'data-value':m[0][2][1]}})
+				basicColumnUpdate($e[0][1],{text:text[1].t,attr:{'data-val':m[1][2][0],'data-value':m[0][2][0]}})
+
+				safe.run(function (cb) {
+					require(["clitpl","async"],function(tf,async){
+						async.forEach(text, function (v,cb) {
+							tf.render("grid_currency_field",{val:v.v!=''?v.v:null,cur:v.c},safe.sure(cb,function(text,ctx){
+								v.t = text.trim();
+								cb()
+							}))
+						},cb)
+					},cb)
+				}, function () {
+					basicColumnUpdate($e[0][0],{text:text[0].t})
+					basicColumnUpdate($e[0][1],{text:text[1].t})
+				})
+			}
+
+			/* parent row update, not sure this is required....
+			var $mainColumnTarget = $record.parent().find(".acc-item-record[data-id=\""+$record.data("recordid")+"\"] .acc-item[data-name=\""+columnName+"\"]");
+			var relaccid = $mainColumnTarget.data("relaccid");
+			if(relaccid && relaccid == $record.data("accid")){
+				$mainColumnTarget.find(".tdContent").text(columnModifiedData.val);
+				_.each(columnModifiedData,function(v,k){
+					$mainColumnTarget.data(k,v);
+				});
+			}*/
+
+			// create next input row when required
+			if($record.next(".acc-item-record-split").length == 0){
+				var $record = $column.closest(".acc-item-record-split");
+				$record.removeAttr("name");
+				$record.find(".deleteSplit").css("visibility", "visible");
+				safe.run(function(cb){
+					require(["clitpl"],function(tf){
+						tf.render("grid_item_split_blank",{id:$record.data("recordid")},safe.sure(cb,function(text,ctx){
+							$record.after(text);
+							$record.next(".acc-item-record-split").show();
+							var $mainrow = $record.prevAll(".acc-item-record").first();
+							hideNonSplitRows($mainrow,1);
+							cb();
+						}));
+					},cb);
+				},function(err){
+					if(err) appError(err);
+				});
+			}
+		}
+
+		// if it still make sense lets do trivial update
+		if (basicUpdate)
+			basicColumnUpdate($column,data);
+
+		// when reconcile value modified lets update it right away, but only in non split mode
+		if (!$container.find(".splitMode").is(":checked") && $column.data("edittype") == "switch") {
+			updateRecord($column.parent(),false,safe.sure(cb,function(result) {
+				$container.removeClass("container-dirty");
+				cb();
+			}));
+		} else
+			cb();
+	}
+
+	function handleColumnClick($column,cb){
+		var editable = $column.data("editable");
+		if(!editable)
+			return cb();
+		var splitblock = $column.data("splitblock");
+		if(splitblock && $container.find(".splitMode").is(":checked"))
+			return cb();
+		var edittype =  $column.data("edittype");
+		var name = $column.data("name");
+
+		require(["clitpl"],function(tf){
+			tf.render("grid_editable_"+editable,{val:$column.data("val")},safe.sure(cb,function(text,ctx){
+				$column.find(".tdContent").hide();
+				$column.find(".tdContentEditable").html(text).show();
+				var $elem = $("#"+ctx.uniq);
+				$elem.focus();
+				if(edittype == "typeahead"){
+					var typeaheadOptions={
+						minLength:0,
+						items:1000,
+						menu: '<ul class="typeahead dropdown-menu" style="max-height:150px;overflow-y:auto;"></ul>'
+					};
+					var thid = 0;
+					if(name == "path"){
+						var suggestions = {};
+						typeaheadOptions.source = function(text,process){
+							var idl = ++thid;
+							var jqXHR = $.ajax({
+								"url": "{{prefix}}/account/{{accountId}}/getaccounts",
+								"dataType": "json",
+								"cache": true
+							});
+							jqXHR.done(function(data){
+								if ($elem.is(":visible") && idl==thid) {
+									suggestions = data;
+									process(_.sortBy(_.keys(data), function(name) { return name; }));
+								}
+							});
+
+						};
+						typeaheadOptions.updater = function(item) {
+							$elem.data('accid', suggestions[item]['id']);
+							$elem.data('currency', suggestions[item]['currency']);
+							$elem.data("accpath", item);
+							$column.data('currency', suggestions[item]['currency']);
+							return item;
+						}
+					}
+					else if(name == "description"){
+						typeaheadOptions.source = function(text,process){
+							var idl = ++thid;
+							var jqXHR = $.ajax({
+								"url": "{{prefix}}/account/{{accountId}}/getdesc",
+								"dataType": "json",
+								"cache": true
+							});
+							jqXHR.done(function(data){
+								if ($elem.is(":visible") && idl==thid)
+									process(data);
+							});
+
+						}
+					}
+					$elem.typeahead(typeaheadOptions);
+					$elem.on('click', function(){
+						$elem.trigger("keyup");
+					})
+					//$elem.click();
+				}
+				else if(edittype == "datepicker"){
+					var options = {autoclose:true,language: _user.language.charAt(0)+_user.language.charAt(1),'format':"{{i18n_date 'format'}}"};
+					$elem.datepicker(options);
+					var date = new Date($column.data('val'));
+					$elem.datepicker("setDate",date);
+					$elem.datepicker("update");
+					$elem.datepicker("show");
+				}
+				$column.addClass("selected");
+
+				if(edittype == "switch"){
+					if($elem.val() == "" || $elem.val() == "c")
+						$elem.val("n");
+					else
+						$elem.val("c");
+
+					$column.parent().find("td[data-name='total']").click();
+
+				}
+				cb();
+			}));
+		},cb);
+	}
+
+	function hideNonSplitRows($selectedRow, splits) {
+		var $all = $container.find("tr").filter(":visible");
+		splits = splits - Math.max(0,rowsLimit-$all.length);
+		var $next = $selectedRow.nextAll(".acc-item-record").filter(":visible");
+		var $prev = $selectedRow.prevAll(".acc-item-record").filter(":visible");
+		while (splits>0 && ($next.length>0 || $prev.length>0)) {
+			var $rows = $next.length>$prev.length?$next:$prev;
+			$rows.last().hide();
+			$rows = $rows.slice(0,-1);
+			if ($next.length>$prev.length)
+				$next = $rows;
+			else
+				$prev = $rows;
+			splits--;
+		}
+	}
+
+	function toggleSplitRows($container){
+		var $checkbox = $container.find(".splitMode");
+		var $selectedRow = $container.find(".acc-item-record.selected");
+		if($selectedRow){
+			var $splits = $container.find(".acc-item-record-split[data-recordid=\""+$selectedRow.data("id")+"\"]");
+			var splits = $splits.length;
+			$container.find(".acc-item[data-splitblock=\"1\"] .tdContent").show();
+			if($checkbox.is(":checked")){
+				updateOldColumnSelected($selectedRow.find(".acc-item.selected"), function(){
+					$container.find(".acc-item-record-split").hide();
+					$selectedRow.find(".acc-item[data-splitblock=\"1\"] .tdContent").hide();
+					$splits.show();
+					// now hide some non splits rows to compensate
+					// amount of displayed split rows
+					$container.find(".acc-item-record").show();
+					hideNonSplitRows($selectedRow,splits);
+				});
+			}
+			else{
+				$splits.hide();
+				$selectedRow.find(".acc-item[data-splitblock=\"1\"] .tdContent").show();
+				$container.find(".acc-item-record").show();
+			}
+		}
+	}
+
+	function updateInnerScrollHeight(){
+		$container.find(".acc-scroll-inner").height(iTotalRecords*rowHeight + $container.find("thead").height());
+	}
+
+	function addNewRecord($column){
+		safe.run(function(cb){
+			updateOldColumnSelected($column, safe.sure(cb,function(){
+				updateRecord($column.parent(),false,safe.sure(cb,function(result){
+					if(result && result.isNew){
+						/*
+						isRecordAdded = true;
+						if (rowsLimit > iTotalRecords)
+							loadGrid($container,0,rowsLimit,function(){$container.unblock();});
+						else
+							$container.find(".acc-scroll").scrollTop($container.find(".acc-scroll").scrollTop()+rowHeight);
+							*/
+						updateContainer();
+					}
+					cb();
+				}));
+			}));
+		},function(err){
+			if(err && err != 1) appError(err);
+		});
+	}
+
+
+});
+},appError)
+</script>

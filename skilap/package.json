@@ -1,0 +1,61 @@
+{
+    "name": "skilap"
+  , "version": "0.0.1"
+  , "private": true
+  , "main": "app.html"
+  , "window": {
+	"title": "Skilap",
+	"icon": "public/img/skilap-logo-small.png",
+	"toolbar": false,
+	"width": 1024,
+	"height": 600
+  }
+  , "dependencies": {
+      "express": "3.x.x"
+    , "connect": ""
+    , "cookies": ""
+    , "jsorm-i18n": ""
+    , "underscore": ""
+    , "safe": ">= 0.1.4"
+    , "sax": ""
+    , "async": "0.2.9"
+    , "sprintf" : ""
+    , "hogan.js" : ""
+    , "dateformatjs" : ""
+    , "step" : ">=0.0.3"
+    , "carrier" : ">= 0.1.0"
+    , "crc" : ">= 0.1.0"
+    , "qs": ">= 0.3.1"
+    , "mime": ">= 0.0.1"
+	, "temp" : "0.4.0"
+	, "validator" : ""
+	, "lodash" : "v1.3.x"
+	, "handlebars" : "1.0.10"
+	, "send" :""
+	, "deep-extend": ""
+	, "less-middleware": "git://github.com/al-s/less.js-middleware.git"
+	, "selenium-webdriver": "git://github.com/sergeyksv/selenium-webdriver-gh.git"
+	, "tingodb": "git://github.com/sergeyksv/tingodb.git"
+	, "wrench" : ""
+	, "optimist" : ""
+	, "mocha" : ""
+    , "cron" : ""
+    , "later" : ""
+    , "moment" : "2.2.1"
+    , "request" : ""
+    , "mkdirp" : ""
+    , "mongodb" : ""
+    , "mongo-utils" : ""
+    , "grunt" : "0.4.x"
+    , "grunt-cli" : "0.1.x"
+    , "grunt-contrib-requirejs" : "0.4.x"
+    , "grunt-contrib-uglify" : "0.2.4"
+    , "grunt-htmlcompressor" : "0.1.x"
+    , "grunt-pngmin" : "0.6.x"
+    , "grunt-smushit" : "0.4.x"
+    }
+    , "scripts": {
+       "test":"./test.sh",
+       "build":"./compile.sh"
+     }
+}

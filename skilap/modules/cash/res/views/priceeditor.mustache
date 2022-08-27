@@ -1,0 +1,274 @@
+<script>
+require(["jquery","highcharts"], function ($) {
+	$(function() {
+		var $page = $("#priceeditor");
+		$page.addClass("ready");
+
+		var graphOptions = {
+            chart: {
+                renderTo: 'graphContainer',
+                zoomType: 'x',
+                spacingRight: 20
+            },
+            title: {
+                text: ''
+            },
+            subtitle: {
+                text: document.ontouchstart === undefined ?
+                    '{{#i18n}}Click and drag in the plot area to zoom in{{/i18n}}' :
+                    '{{#i18n}}Drag your finger over the plot to zoom in{{/i18n}}'
+            },
+            xAxis: {
+                type: 'datetime',
+                maxZoom: 14 * 24 * 3600000, // fourteen days
+                title: {
+                    text: null
+                }
+            },
+            yAxis: {
+                title: {
+                    text: '{{#i18n}}Exchange rate{{/i18n}}'
+                },
+                startOnTick: false,
+                showFirstLabel: false
+            },
+            tooltip: {
+                shared: true
+            },
+            legend: {
+                enabled: false
+            },
+            plotOptions: {
+                area: {
+                    fillColor: {
+                        linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1},
+                        stops: [
+                            [0, Highcharts.getOptions().colors[0]],
+                            [1, 'rgba(2,0,0,0)']
+                        ]
+                    },
+                    lineWidth: 1,
+                    marker: {
+                        enabled: false,
+                        states: {
+                            hover: {
+                                enabled: true,
+                                radius: 5
+                            }
+                        }
+                    },
+                    shadow: false,
+                    states: {
+                        hover: {
+                            lineWidth: 1
+                        }
+                    }
+                }
+            },
+
+            series: [{
+                type: 'area',
+                name: '',
+                data: []
+            }]
+        };
+
+		var redrawPriceGraph = function(){
+			var from =$("#currencySelectorForm").find('#firstCurrency option:selected').val();
+			var to = $("#currencySelectorForm").find('#secondCurrency option:selected').val();
+			var jqXHR = $.ajax({
+				url:"{{prefix}}/priceeditor",
+				data:{redrawGraph:1,from:from,to:to},
+				dataType:"json"
+			});
+			jqXHR.done(function(res){
+				graphOptions.title.text = from+' {{#i18n}}to{{/i18n}} '+to+' {{#i18n}}exchange rate{{/i18n}}';
+				graphOptions.series[0].name = from+' to '+to;
+				graphOptions.yAxis.max = res.max.value;
+				graphOptions.series[0].data = res.data;
+				var chart = new Highcharts.Chart(graphOptions);
+			});
+		};
+
+		var selectList = $("#currencySelectorForm select");
+		$($(selectList[0]).find('option')[0]).attr('selected','selected');
+		$($(selectList[0]).find('option')[1]).attr('disabled','disabled');
+		$($(selectList[1]).find('option')[0]).attr('disabled','disabled');
+		$($(selectList[1]).find('option')[1]).attr('selected','selected');
+
+		$(".rateCtrlBtn").attr('disabled','disabled');
+		/* on change currency */
+		$page.on('change', "#currencySelectorForm select",function(){
+			var current=0,target=1;
+			if(selectList[1] == $(this).get(0)){
+				current = 1;target = 0;
+			}
+			$(selectList[current]).find('option').removeAttr('disabled');
+			$(selectList[target]).find('option').removeAttr('disabled');
+			var $currentOption = $(this).find("option:selected");
+			var $targetOption = $(selectList[target]).find('option[value="'+$currentOption.val()+'"]');
+			if($targetOption.is(":selected")){
+				$targetOption.removeAttr('selected');
+			}
+			$targetOption.attr('disabled','disabled');
+
+			$(".rateEditorContainer").html('');
+			$("#graphContainer").html('');
+			$(".rateCtrlBtn").attr('disabled','disabled');
+		});
+
+		var oldFrom,oldTo;
+		$page.on("submit", "#currencySelectorForm", function(){
+			var $self = $(this);
+			var from = $self.find('#firstCurrency option:selected').val();
+			var to = $self.find('#secondCurrency option:selected').val();
+
+			var jqXHR = $.ajax({
+				url:"{{prefix}}/priceeditor",
+				data:$self.serialize(),
+				dataType:"html"
+			});
+			jqXHR.done(function(data){
+				$(".rateEditorContainer").html(data);
+				$pagination = $(".rateEditorContainer .pagination")
+				$pagination.remove();
+				$page.find("#pagination").html($pagination);
+
+				$(".rateCtrlBtn").attr('disabled','disabled');
+				$(".add.rateCtrlBtn").removeAttr('disabled');
+				if(oldFrom != from || oldTo != to){
+					oldFrom = from;
+					oldTo = to;
+					redrawPriceGraph();
+				}
+			});
+			$page.find("H2").hide();
+			$self.remove();
+			$page.find("#rightcol").prepend($self);
+			return false;
+		});
+
+		$page.on('click',".pagination .pageNum",function(){
+			if($(this).parent().hasClass("active"))
+				return false;
+			$("#currencySelectorForm input[name=\"offset\"]").val($(this).data("offset"));
+			$("#currencySelectorForm").submit();
+		});
+
+		$page.on('click',"#rateTable tbody tr",function(){
+			$("#rateTable tbody tr").removeClass('success');
+			$(this).addClass('success');
+			$(".edit.rateCtrlBtn,.delete.rateCtrlBtn").removeAttr('disabled');
+		});
+
+		$(".add.rateCtrlBtn,.edit.rateCtrlBtn").click(function(){
+			var title, mode, currentDate, rate;
+			var id = 0;
+			if($(this).hasClass('add')){
+				title = '{{#i18n}}Add Rate Currency{{/i18n}}';
+				var mode = 'add';
+				rate = "";
+				currentDate = "";
+			}
+			else if($(this).hasClass('edit')){
+				title = '{{#i18n}}Edit Rate Currency{{/i18n}}';
+				mode = 'edit';
+				id = $("#rateTable tr.success").data('id');
+				rate = $("#rateTable tr.success td.rate").text();
+				currentDate = $("#rateTable tr.success td.date").text();
+			}
+			var from = $('#firstCurrency option:selected').val();
+			var to = $('#secondCurrency option:selected').val();
+			$this = $(this);
+			var $me = $(this).parent()
+			$me.block();
+			(function (cb) {
+				require(['api','clitpl','safe','bootstrap'], function (api,tf,safe) {
+					tf.render('priceeditor_edit', {title:title, id:id, mode:mode,
+							currentDate:currentDate, lastRate:rate,
+							firstCurr:from, secondCurr:to}, safe.sure(cb,function(text, ctx) {
+						$me.unblock();
+						$("body").append(text);
+						var $modal = $("#"+ctx.uniq).modal();
+						$modal.on("frm-saved", function (e, pricen) {
+							tf.render('priceeditor_tr', pricen, safe.sure(cb, function(text) {
+								if(id != 0){
+									$("#rateTable tr.success[data-id='"+id+"']").replaceWith(text);
+								}
+								else{
+									$("#rateTable tbody").prepend(text);
+								}
+								redrawPriceGraph();
+								$modal.modal('hide')
+								cb();
+							}))
+						})
+					}))
+				},cb)
+			})(function (err) {
+				if (err) appError(err);
+				$me.unblock();
+			})
+			return false;
+		});
+		$(".delete.rateCtrlBtn").click(function(){
+			var id = $("#rateTable tr.success").data('id');
+			var $me = $(this).parent()
+			$me.block();
+			(function (cb) {
+				require(['api','clitpl','safe','bootstrap'], function (api,tf,safe) {
+					tf.render('priceeditor_delete', {id:id}, safe.sure(cb,function(text, ctx) {
+						$me.unblock();
+						$("body").append(text);
+						var $modal = $("#"+ctx.uniq).modal();
+						$modal.on("frm-saved", function (e, pricen) {
+							$("#rateTable tr.success[data-id='"+id+"']").remove();
+							redrawPriceGraph();
+							$modal.modal('hide')
+						})
+					}))
+				},cb)
+			})(function (err) {
+				if (err) appError(err);
+				$me.unblock();
+			})
+		});
+	});
+}, appError);
+</script>
+<div id="priceeditor">
+<div class=row>
+<div class="span6">
+<h2>{{#i18n}}Select pair of currencies to edit{{/i18n}}</h2>
+<form id="currencySelectorForm" class="well form-inline">
+	<input type="hidden" name="offset" value="0" />
+	<select id="firstCurrency" name="firstCurr">
+		{{>currencies_list}}
+	</select>
+
+	<select id="secondCurrency" name="secondCurr">
+		{{>currencies_list}}
+	</select>
+	<button type="submit" class="btn btn-primary">{{#i18n}}Apply{{/i18n}}</button>
+</form>
+	<div class="btn-group">
+		<button class="btn add rateCtrlBtn" disabled="disabled" >{{#i18n}}Add{{/i18n}}</button>
+		<button class="btn edit rateCtrlBtn" disabled="disabled" >{{#i18n}}Edit{{/i18n}}</button>
+		<button class="btn delete rateCtrlBtn" disabled="disabled" >{{#i18n}}Delete{{/i18n}}</button>
+    </div>
+    <br><br>
+	<div class="rateEditorContainer">
+
+	</div>
+
+</div>
+<div id="rightcol" class="span6">
+	<div id="graphContainer"></div>
+</div>
+</div>
+<div class="row">
+<div id="pagination"></div>
+</div>
+</div>
+
+

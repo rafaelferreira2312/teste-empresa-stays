@@ -1,0 +1,23 @@
+<table id="rateTable" class="table table-bordered table-condensed">
+	<thead>
+		<tr>
+			<th class="date" >{{#i18n}}Date{{/i18n}}</th>
+			<th class="rate" >{{#i18n}}Rate currency{{/i18n}}</th>
+			<th class="rate" >{{#i18n}}Raw value{{/i18n}}</th>			
+		</tr>
+	</thead>
+	<tbody>
+		{{#prices}}
+			<tr data-id={{_id}}>	
+				{{> priceeditor_tr}}
+			</tr>			
+		{{/prices}}
+	</tbody>
+</table>
+<div class="pagination pagination-centered">
+	<ul>
+	{{#paging}}
+		<li class="{{#active}}active{{/active}}"><a class="pageNum" href="javascript:void(0);" data-offset="{{offset}}">{{num}}</a></li>
+	{{/paging}}
+	</ul>
+</div>

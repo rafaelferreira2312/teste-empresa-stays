@@ -1,0 +1,113 @@
+<!DOCTYPE HTML>
+<html lang="en-us">
+<head>
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{{title}}</title>
+	 <!-- Le styles -->
+	<link href="/cash/css/bootstrap.css" rel="stylesheet">
+	<link href="/cash/css/responsive.css" rel="stylesheet">
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <script src="/common/js/require.js"></script>
+	<script>
+		var _apiToken = '{{apiToken}}';
+		var _user = {_id:'{{user._id}}',language:"{{user.language}}"};
+		var _prefix = '{{prefix}}';
+	</script>
+    <script src="{{prefix}}/js/app{{relisets}}.js"></script>
+</head>
+<body>
+	<div class="navbar navbar-fixed-top navbar-inverse">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+         <a href='/' id="logoNew"></a>
+		  <a class="brand" href="#">{{#i18n}}Cash{{/i18n}}</a>
+          <div class="nav-collapse">
+			<ul class="nav nav-pills">
+              {{>nav}}
+              <li class="dropdown">
+				<a href="return false" data-toggle="dropdown" class="dropdown-toggle">{{#i18n}}Pages{{/i18n}} <b class="caret"></b></a>
+				<ul class="dropdown-menu">
+				  {{#tabs}}
+				  <li {{#selected}}class="active"{{/selected}}>
+					<a href="{{url}}" data-pid="{{pid}}">{{name}}</a>
+				  </li>
+				  {{/tabs}}
+				 </ul>
+			  </li>
+			</ul>
+			{{#pmenu}}
+			<ul class="nav nav-pills pull-right"  id="page_menu">
+              <li class="dropdown">
+				<a href="return false" data-toggle="dropdown" class="dropdown-toggle"><i class="icon-wrench icon-white"></i> {{name}} <b class="caret"></b></a>
+				<ul class="dropdown-menu">
+				  {{#items}}
+				  <li>
+					<a href="{{href}}" id="{{id}}">{{name}}</a>
+				  </li>
+				  {{/items}}
+				 </ul>
+			  </li>
+			</ul>
+			{{/pmenu}}
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+    <div class="container-fluid">
+		<div class="row-fluid">
+			<div class="span2">
+					<ul class="nav nav-tabs nav-stacked">
+					  {{#tabs}}
+					  <li {{#selected}}class="active"{{/selected}}>
+						<button class="close closeTab" data-pid="{{pid}}">&times;&nbsp;</button>
+						<a href="{{url}}">{{name}}</a>
+					  </li>
+					  {{/tabs}}
+					</ul>
+			</div>
+			<div class="span10 context">
+				{{>content}}
+			</div>
+		</div>
+		<hr>
+		<footer>
+			<p>&copy; {{#i18n}}Copyright by PushOk Software{{/i18n}} 2011-2013</p>
+		</footer>
+    </div>
+<script>
+require(['jquery',"bootstrap"], function ($) {
+	$(function () {
+		$(".closeTab").on("click", function(e){
+			e.preventDefault();
+			var self = $(this);
+			(function (cb) {
+				require(['api','safe'], function (api, safe) {
+					api.call('cash.web_removeTabs',self.data('pid'),safe.sure(cb, function () {
+						if (self.parents("li").hasClass("active")){
+							$prev = $(self.parents("li")).prev();
+							if (!$prev[0])
+								location.href="{{prefix}}";
+							else
+								$prev.find('a')[0].click();
+							self.parents("li").remove();
+						} else {
+							self.parents("li").remove();
+						}
+					}))
+				}, cb)
+			})(appError)
+		});
+	})
+}, appError)
+</script>
+</body>
+</html>

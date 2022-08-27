@@ -1,0 +1,79 @@
+<div class="row">
+	<div class="span6">
+		<h2>{{#i18n}}Guest prefferences{{/i18n}}</h2><a href="javascript:void(0);" id="edit-pref">{{#i18n}}edit{{/i18n}}</a>
+		{{>user_prefs}}
+	</div>
+	<div class="span6">
+		<h2>{{#i18n}}Guest permissions{{/i18n}}</h2><a href="javascript:void(0);" id="edit-perm">{{#i18n}}edit{{/i18n}}</a>
+		{{>user_perm}}
+	</div>
+</div>
+<script>
+require(["jquery","jquery-block"], function($){
+	$(function(e) {
+		$("#edit-pref").on("click", function() {
+			$this = $(this);
+			var $me = $(this).parent()
+			$me.block();
+			(function (cb) {
+				require(['api','clitpl','safe','bootstrap'], function (api,tf,safe) {
+					api.call('core.getUserById', null, safe.sure(cb, function (user) {
+						tf.render('user_prefs_edit', {luser:user, type: 'guest'}, safe.sure(cb, function(text, ctx) {
+							$me.unblock();
+							$("body").append(text);
+							var $modal = $("#"+ctx.uniq).modal();
+							$modal.on("frm-saved", function () {
+								api.call('core.getUserById', null, safe.sure(cb, function (user) {
+									tf.render('user_prefs', {user_: user}, safe.sure(cb, function(text) {
+										$me.find("#user_prefs").remove();
+										$this.after(text)
+										$modal.modal('hide')
+										cb();
+									}))
+								}))
+							})
+						}))
+					}))
+				},cb)
+			})(function (err) {
+				if (err) appError(err);
+				$me.unblock();
+			})
+			return false;
+		})
+		$("#edit-perm").on("click", function() {
+			$this = $(this);
+			var $me = $(this).parent()
+			$me.block();
+			(function (cb) {
+				require(['api','clitpl','safe','bootstrap'], function (api,tf,safe) {
+					api.call('core.getUserById', null, safe.sure(cb, function (user) {
+						api.call('core.getUserPermissions', user, safe.sure(cb, function (permissions) {
+							tf.render('user_perm_edit', {permissions: permissions, luser: user, type: 'guest'}, safe.sure(cb,function(text, ctx) {
+								$me.unblock();
+								$("body").append(text);
+								var $modal = $("#"+ctx.uniq).modal();
+								$modal.on("frm-saved", function (permissions) {
+									api.call('core.getUserPermissions', user, safe.sure(cb, function (permissions) {
+										tf.render('user_perm',{permissions: permissions, user: user}, safe.sure(cb, function(text) {
+											$me.find("#user_perm").remove();
+											$this.after(text)
+											$modal.modal('hide')
+											cb();
+										}))
+									}))
+								})
+							}))
+						}))
+					}))
+				},cb)
+			})(function (err) {
+				if (err) appError(err);
+				$me.unblock();
+			})
+			return false;
+		})
+	})
+}, appError)
+</script>
+

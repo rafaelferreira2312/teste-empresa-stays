@@ -1,0 +1,99 @@
+<script>
+$(function() {
+	$(document).on('click','.nav-list .expand-collapse',function(){
+		if($(this).hasClass('icon-hand-down')){
+			$(this).removeClass('icon-hand-down').addClass('icon-hand-right');
+			$(this).parents('li').find('.nav-list').hide();
+		}
+		else{
+			$(this).addClass('icon-hand-down').removeClass('icon-hand-right');
+			$(this).parents('li').find('.nav-list').show();
+		}
+		return false;
+	});
+	$("#ski_createTask").iframeContainer({src:"{{prefix}}/create",host:"{{host}}"});
+	$("#ski_deleteTask").iframeContainer({src:"{{prefix}}/delete",host:"{{host}}"});
+
+	$(document).on('click', '#add_new', function(e){
+		$("#ski_createTask").iframeContainer("open");
+		$("#ski_createTask").iframeContainer("triggerEvent",{name:'resetTaskDialogData'});
+		return false;
+	});
+	$("body").on('taskUpdatedSuccess',function(e,data){
+		location.reload(true);
+		return false;
+	});
+	$(document).on("click", ".resolveTask", function(e){
+		var id = $(this).data('id');
+		var rpc = new jsonrpc.JsonRpc('/jsonrpc');
+		rpc.call('tasks.resolveTask', '{{token}}', id, {
+			success: function (data) {
+				location.reload(true);
+				return false;
+			},
+			failure: function (reason) {
+				alert(reason);
+			},
+		});
+		return false;
+	});
+	$(document).on("click", ".editTask", function(e){
+		var id = $(this).data('id');
+		var rpc = new jsonrpc.JsonRpc('/jsonrpc');
+		rpc.call('tasks.getTask', '{{token}}', id, {
+			success: function (data) {
+				$("#ski_createTask").iframeContainer("triggerEvent",{name:'setTaskDialogData',data:data});
+			},
+			failure: function (reason) {
+			},
+		});
+		$("#ski_createTask").iframeContainer("open");
+		return false;
+	});
+	$(document).on("click", ".deleteTask", function(e){
+		var id = $(this).data('id');
+		var taskName = $('#task'+id).text();
+		$("#ski_deleteTask").iframeContainer("open");
+		$("#ski_deleteTask").iframeContainer("triggerEvent",{name:'setTaskDeleteDialogData',data:{id:id,name:taskName}});
+		return false;
+	});
+	$("body").on('taskDeletedSuccess',function(e,id){
+		location.reload(true);
+	});
+
+	$('#tasks').dataTable();
+});
+</script>
+<div id="ski_createTask"></div>
+<div id="ski_deleteTask"></div>
+<a id="add_new" href="javascript:void(0);" class="btn btn-primary">{{#i18n}}Add new task{{/i18n}}</a>
+<h2>{{#i18n}}Tasks{{/i18n}}: <span>{{tasksNum}}</span></h2>
+<hr size="2" noshade />
+<div class="well">
+<ul class="nav nav-list">
+	<table id="tasks" class="display dataTable" cellspacing="0" cellpadding="0" border="0" style="width:100%;">
+	<thead>
+	<tr>
+		<th>Created</th>
+		<th>Name</th>
+		<th>Description</th>
+		<th></th>
+	</tr>
+	</thead>
+	<tbody>
+	{{#tasks}}
+	<tr>
+		<td>{{dt}}</td>
+		<td id="task_{{_id}}">{{name}}</td>
+		<td>{{description}}</td>
+		<td>
+		{{#to_resolve}}<i class="icon-ok-circle resolveTask" data-id="{{_id}}" title="{{#i18n}}mark as resolved{{/i18n}}" ></i>{{/to_resolve}}
+			<i class="icon-edit editTask" data-id="{{_id}}" title="{{#i18n}}edit{{/i18n}}" ></i>
+			<i class="icon-trash deleteTask" data-id="{{_id}}" title="{{#i18n}}delete{{/i18n}}" ></i>
+		</td>
+	</tr>
+	{{/tasks}}
+	</tbody>
+	</table>
+</ul>
+</div>
